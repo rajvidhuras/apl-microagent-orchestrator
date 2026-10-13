@@ -1,0 +1,18 @@
+openapi: 3.0.1
+info:
+  title: Todo Service
+  version: "1.0.0"
+  description: Simple todo API
+paths:
+  /todos:
+    get:
+      summary: List todos
+    post:
+      summary: Create todo
+  /todos/{id}:
+    get:
+      summary: Get todo
+    put:
+      summary: Update todo
+    delete:
+      summary: Delete todo

@@ -1,0 +1,17 @@
+openapi: 3.0.1
+info:
+  title: Serialisation Verification Service
+  version: "1.0.0"
+  description: Verifies product serialisation records against the national repository.
+  # APL metadata (synthetic score)
+  x-apl:
+    domain: Regulatory Affairs
+    stressScore: 0.40
+    threshold: 0.70
+paths:
+  /serials/verify:
+    post:
+      summary: Verify a batch of serial numbers
+  /serials/exceptions:
+    get:
+      summary: List verification exceptions

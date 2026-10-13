@@ -1,0 +1,4 @@
+{
+  "name": "MicroAgent Orchestrator",
+  "description": "Transforms static microservice definitions into an agentic workflow. Orchestrates complex tasks using GPT-OSS, analyzes security risks via OWASP standards, and visualizes agent usage."
+}

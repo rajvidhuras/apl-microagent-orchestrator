@@ -1,0 +1,33 @@
+# Illustrative pharma workload definitions with APL metadata.
+# Scores are synthetic and reproduce the worked example in the paper
+# (Table "Domain-local assessments"): 0.60, 0.55, 0.58 with tau_i = 0.70.
+services:
+  - name: signal-detection-batch
+    description: Nightly batch that scores adverse-event reports for disproportionality signals.
+    endpoints:
+      - /signals/run
+      - /signals/latest
+    x-apl:
+      domain: Pharmacovigilance
+      stressScore: 0.60
+      threshold: 0.70
+
+  - name: supplier-continuity-service
+    description: Tracks supplier concentration and lead-time drift for critical materials.
+    endpoints:
+      - /suppliers/risk
+      - /leadtimes
+    x-apl:
+      domain: Supply Chain
+      stressScore: 0.55
+      threshold: 0.70
+
+  - name: capa-exception-engine
+    description: Workflow engine cycling through CAPA backlog and out-of-specification trends.
+    endpoints:
+      - /capa/open
+      - /oos/trend
+    x-apl:
+      domain: Quality Assurance
+      stressScore: 0.58
+      threshold: 0.70
