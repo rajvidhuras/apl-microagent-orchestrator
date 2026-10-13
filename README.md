@@ -4,6 +4,8 @@ Transforms static microservice definitions into “micro-agents,” lets you orc
 
 This is the reference implementation of the AI Promotion Layer (APL) described in *Federated AI Orchestration for Fragmented Operational Workload Estates* ([SSRN 7419802](https://ssrn.com/abstract=7419802)).
 
+Development began in December 2025 in a private repository. This public repository is a cleaned release prepared for publication.
+
 ## What’s inside
 - **Service Lab:** Upload YAML/JSON/Docker Compose/OpenAPI/K8s specs; they are normalized into `Microservice` objects and auto-promoted to agent mode with GPT-OSS connection defaults (`components/FileUpload.tsx`, `types.ts`).
 - **Orchestration Studio:** Describe a problem; the app asks GPT-OSS to draft a step-by-step plan using the available agents, then lets you execute each step and tracks usage (`components/Orchestrator.tsx`, `services/llmService.ts`).
