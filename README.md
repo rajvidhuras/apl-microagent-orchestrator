@@ -2,6 +2,8 @@
 
 Transforms static microservice definitions into “micro-agents,” lets you orchestrate them with GPT-OSS, and surfaces security and usage insights.
 
+This is the reference implementation of the AI Promotion Layer (APL) described in *Federated AI Orchestration for Fragmented Operational Workload Estates* ([SSRN 7419802](https://ssrn.com/abstract=7419802)).
+
 ## What’s inside
 - **Service Lab:** Upload YAML/JSON/Docker Compose/OpenAPI/K8s specs; they are normalized into `Microservice` objects and auto-promoted to agent mode with GPT-OSS connection defaults (`components/FileUpload.tsx`, `types.ts`).
 - **Orchestration Studio:** Describe a problem; the app asks GPT-OSS to draft a step-by-step plan using the available agents, then lets you execute each step and tracks usage (`components/Orchestrator.tsx`, `services/llmService.ts`).
@@ -32,6 +34,7 @@ Tests reproduce the worked examples: `npx tsx tests/systemicStress.test.ts`.
 ## Quick start
 ```bash
 npm install
+cp .env.example .env.local   # then add your Azure OpenAI endpoint and key
 npm run dev       # starts Vite on http://localhost:5173
 npm run build     # type-check + production build
 npm run preview   # serve the built app locally
@@ -42,12 +45,24 @@ npm run preview   # serve the built app locally
 2. The app normalizes each entry, marks it `isAgentic: true`, attaches GPT endpoint/key/model defaults, and triggers an OWASP scan.
 3. Switch to **Orchestration Studio**, describe your task, and generate a plan. Run steps individually or “Execute Workflow”; usage counts increment per agent.
 4. Check **Analytics** for agent leaderboard and totals; open any card’s OWASP report for details.
+5. Open **Systemic Stress** to see per-domain signals and the joint score. This tab is computed locally and works without an LLM key.
 
 ## Configuration
-- GPT wiring lives in `services/llmService.ts` (`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `DEFAULT_GPT_MODEL`). Replace the hard-coded dev key with your own and externalize it before production.
+- GPT settings are read from `.env.local` (`VITE_AZURE_OPENAI_ENDPOINT`, `VITE_AZURE_OPENAI_API_KEY`, `VITE_DEFAULT_GPT_MODEL`); see `.env.example`. `.env.local` is gitignored.
+- `VITE_` variables are embedded in the browser bundle, so this setup is for local use only. Put a server-side proxy in front of the model before any shared deployment.
 - The UI currently assumes Azure GPT-OSS chat completions; adapt `callAzureChat` if you swap providers.
 
 ## Notes and limitations
 - LLM calls are live and can fail; OWASP analysis falls back to a low-severity error entry when the API errors.
 - Responses are simulated/LLM-generated; verify outputs before using them operationally.
-- No persistence layer is included; uploads and plans live in client state only.
+- No persistence layer is included; uploads and plans live in client state only (run history uses browser localStorage).
+
+## Citation
+```
+Marella, S. R., Penugonda, P. T., & Yaramati, R. K. (2026). Federated AI Orchestration for
+Fragmented Operational Workload Estates: An AI Promotion Layer Architecture Illustrated in the
+Pharmaceutical Operations Domain. SSRN. https://doi.org/10.2139/ssrn.7419802
+```
+
+## License
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
