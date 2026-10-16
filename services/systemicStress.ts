@@ -17,7 +17,7 @@ import { Microservice } from '../types';
  * individual domain has crossed its own threshold. That is the case
  * domain-local monitoring cannot see.
  *
- * Limitations (kept explicit on purpose):
+ * Limitations:
  *  - Independence is assumed. Correlated domains need a copula-based model.
  *  - S_sys rises with the number of domains, so tau_sys must be calibrated
  *    against the domain count to avoid false alarms.

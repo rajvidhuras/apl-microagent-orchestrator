@@ -10,28 +10,20 @@ export const AZURE_OPENAI_API_KEY: string = import.meta.env.VITE_AZURE_OPENAI_AP
 export const DEFAULT_GPT_MODEL: string = import.meta.env.VITE_DEFAULT_GPT_MODEL ?? 'gpt-oss-120b';
 
 const SYSTEM_INSTRUCTION_ORCHESTRATOR = `
-You are an expert Microservice Orchestrator. 
-Your goal is to break down a user's problem into a sequence of executable steps using the available "Agentic Services".
-You must understand the capabilities of each agent based on its description and endpoints.
-Return a structured JSON plan.
+Create an executable plan for the user's task using the available agent descriptions and endpoints.
+Return the plan as JSON.
 `;
 
 const SYSTEM_INSTRUCTION_OWASP = `
-You are a Cyber Security Expert specializing in LLM Application Security.
-Analyze the provided microservice definition (YAML/JSON) against the **OWASP Top 10 for LLM Applications 2025**.
-Identify potential risks based on the service's description, inputs, and outputs.
-Check for risks like Prompt Injection, Insecure Output Handling, Training Data Poisoning, Denial of Service, Model Theft, etc.
-Ensure your analysis strictly adheres to the 2025 guidelines.
+Review the service description and endpoints for risks covered by the OWASP Top 10 for LLM Applications 2025.
+Return only risks supported by the supplied information. Do not infer implementation details that are not provided.
 `;
 
 const SYSTEM_INSTRUCTION_SUMMARY = `
-You are an SRE note-taker. Summarize the execution of a remediation workflow across microservices.
-Keep it concise: 3-5 bullet points max. Include outcome, services used, notable risks, and any follow-ups.
+Summarize the workflow execution in three to five bullets. Include the outcome, services used, notable risks, and follow-up work.
 `;
 
-/**
- * Helper: call Azure GPT-OSS chat completions and return the assistant text.
- */
+/** Sends a chat completion request and returns the assistant's text. */
 async function callAzureChat(
   messages: AzureChatMessage[],
   temperature = 0.2,
@@ -67,9 +59,7 @@ async function callAzureChat(
   return content.trim();
 }
 
-/**
- * OWASP risk analysis using Azure GPT-OSS.
- */
+/** Analyze a service description and endpoints for OWASP risks. */
 export const analyzeOwaspRisks = async (
   serviceName: string,
   serviceDescription: string,
@@ -111,9 +101,7 @@ Each item must have:
   }
 };
 
-/**
- * Orchestration plan generation using Azure GPT-OSS.
- */
+/** Generate a plan using the available agents. */
 export const generateOrchestrationPlan = async (
   userProblem: string,
   availableAgents: Microservice[],
@@ -163,21 +151,19 @@ Return ONLY a JSON array of steps with the following shape:
   }
 };
 
-/**
- * Simulate executing an agent action via Azure GPT-OSS.
- */
+/** Generate a response for an agent action. */
 export const executeAgentAction = async (
   agent: Microservice,
   action: string,
 ): Promise<string> => {
   try {
     const prompt = `
-You are mimicking a microservice agent named "${agent.name}".
-Description: ${agent.description}
+Respond as the microservice agent "${agent.name}".
+Capabilities: ${agent.description}
 
 Task: ${action}
 
-Generate a realistic output for this task. Keep it concise.
+Return a concise result for the task. Do not claim to have performed actions that cannot be verified.
 `.trim();
 
     const messages: AzureChatMessage[] = [{ role: 'user', content: prompt }];
@@ -189,9 +175,7 @@ Generate a realistic output for this task. Keep it concise.
   }
 };
 
-/**
- * Summarize a completed run for the registry (offline-friendly).
- */
+/** Summarize a run for the registry. */
 export const summarizeRun = async (run: RunRecord): Promise<string> => {
   try {
     const stepLines = run.steps

@@ -16,7 +16,7 @@ import {
   generateOrchestrationPlan,
   executeAgentAction,
   summarizeRun,
-} from '../services/llmService.ts'; // or '../services/azureLlmService'
+} from '../services/llmService.ts';
 import {
   saveRun,
   updateRun,
@@ -120,7 +120,7 @@ export const Orchestrator: React.FC<OrchestratorProps> = ({ agents, onAgentsUsed
     saveRun(run);
     setLatestRun(run);
 
-    // Background summarization; do not block UI.
+    // Generate the summary after saving the run so the workflow stays responsive.
     setTimeout(async () => {
       try {
         const summary = await summarizeRun(run);
@@ -137,7 +137,7 @@ export const Orchestrator: React.FC<OrchestratorProps> = ({ agents, onAgentsUsed
 
   return (
     <div className="flex h-[calc(100vh-250px)] min-h-[600px] bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xl">
-      {/* Sidebar: Available Agents List - Always Visible */}
+      {/* Available agents */}
       <div className="w-[280px] shrink-0 bg-slate-50 border-r border-slate-200 flex flex-col">
         <div className="p-4 border-b border-slate-200 bg-white">
           <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-2">
@@ -197,11 +197,11 @@ export const Orchestrator: React.FC<OrchestratorProps> = ({ agents, onAgentsUsed
         </div>
       </div>
 
-      {/* Main Area */}
+      {/* Workflow */}
       <div className="flex-1 flex flex-col bg-white min-w-0">
-        {/* Plan & Chat Area */}
+        {/* Plan and task input */}
         <div className="flex-1 flex flex-col relative min-h-0">
-          {/* Top: Plan Visualization (Scrollable) */}
+          {/* Plan */}
           <div className="flex-1 p-6 overflow-y-auto border-b border-slate-200 bg-slate-50">
             {plan.length > 0 && (
               <div className="sticky top-0 right-0 flex justify-end mb-4 z-20">
@@ -250,7 +250,7 @@ export const Orchestrator: React.FC<OrchestratorProps> = ({ agents, onAgentsUsed
             {isPlanning && (
               <div className="h-full flex flex-col items-center justify-center text-sky-600 space-y-4">
                 <Loader2 className="w-10 h-10 animate-spin" />
-                <p className="animate-pulse">Orchestrator is devising a plan...</p>
+                <p className="animate-pulse">Generating a plan...</p>
               </div>
             )}
 
@@ -356,7 +356,7 @@ export const Orchestrator: React.FC<OrchestratorProps> = ({ agents, onAgentsUsed
                 onChange={e => setInput(e.target.value)}
                 placeholder={
                   activeAgentCount > 0
-                    ? "Push your problem here... (e.g. 'Audit the authentication service and verify logs')"
+                    ? "Describe the task (for example, 'Audit the authentication service and verify logs')"
                     : 'Upload services in the Lab to start.'
                 }
                 disabled={activeAgentCount === 0}

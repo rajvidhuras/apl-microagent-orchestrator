@@ -53,7 +53,7 @@ export const ServiceConfigModal: React.FC<ServiceConfigModalProps> = ({ service,
         
         <div className="p-6 space-y-4">
             <p className="text-sm text-slate-600">
-                Turn this microservice into an Agent. The <strong>Azure GPT-OSS API key</strong> is pre-configured system-wide.
+                Configure this service as an agent. The <strong>Azure GPT-OSS API key</strong> is read from the application settings.
             </p>
 
             <div className="space-y-2">

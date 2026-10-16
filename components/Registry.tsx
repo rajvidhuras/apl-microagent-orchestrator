@@ -46,7 +46,7 @@ export const Registry: React.FC<RegistryProps> = ({ agents }) => {
           <NotebookPen className="text-sky-600" />
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Operational Registry</h2>
-            <p className="text-sm text-slate-600">Problems, workflows, and summaries across sessions.</p>
+            <p className="text-sm text-slate-600">Saved workflows, summaries, and corrections.</p>
           </div>
         </div>
         <button

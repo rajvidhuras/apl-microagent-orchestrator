@@ -1,17 +1,15 @@
 # MicroAgent Orchestrator
 
-Transforms static microservice definitions into “micro-agents,” lets you orchestrate them with GPT-OSS, and surfaces security and usage insights.
+MicroAgent Orchestrator imports service definitions, prepares them for use as agents, and builds GPT-OSS workflows from a user's task. It also displays OWASP risk analyses, usage counts, and systemic stress scores.
 
-This is the reference implementation of the AI Promotion Layer (APL) described in *Federated AI Orchestration for Fragmented Operational Workload Estates* ([SSRN 7419802](https://ssrn.com/abstract=7419802)).
-
-Development began in December 2025 in a private repository. This public repository is a cleaned release prepared for publication.
+The project demonstrates the AI Promotion Layer (APL) described in *Federated AI Orchestration for Fragmented Operational Workload Estates* ([SSRN 7419802](https://ssrn.com/abstract=7419802)).
 
 ## What’s inside
-- **Service Lab:** Upload YAML/JSON/Docker Compose/OpenAPI/K8s specs; they are normalized into `Microservice` objects and auto-promoted to agent mode with GPT-OSS connection defaults (`components/FileUpload.tsx`, `types.ts`).
-- **Orchestration Studio:** Describe a problem; the app asks GPT-OSS to draft a step-by-step plan using the available agents, then lets you execute each step and tracks usage (`components/Orchestrator.tsx`, `services/llmService.ts`).
-- **Security Audit:** Each uploaded service gets an OWASP Top 10 for LLM Applications (2025) risk scan via GPT-OSS and displays mitigations (`components/OwaspReport.tsx`).
-- **Analytics:** Leaderboard and counters for active agents and total invocations (`components/AgentsLeaderboard.tsx`).
-- **Systemic Stress:** A joint-probability dimension across promoted agents (`services/systemicStress.ts`, `components/SystemicStress.tsx`). Each agent can carry a domain and a stress score S_i with a domain threshold τ_i. Agents are collapsed to one signal per domain (max), and the systemic score is S_sys = 1 − ∏(1 − S_i). The panel flags *hidden systemic stress*: S_sys ≥ τ_sys while no domain has crossed its own threshold.
+- **Service Lab:** Import YAML, JSON, Docker Compose, OpenAPI, or Kubernetes definitions. Each definition is normalized to a `Microservice` and given the configured GPT-OSS connection settings (`components/FileUpload.tsx`, `types.ts`).
+- **Orchestration Studio:** Ask GPT-OSS to draft a step-by-step plan from the available agents, then run the steps and track usage (`components/Orchestrator.tsx`, `services/llmService.ts`).
+- **Security Audit:** Review a GPT-OSS-generated risk analysis against the OWASP Top 10 for LLM Applications 2025, including suggested mitigations (`components/OwaspReport.tsx`).
+- **Analytics:** Compare agent usage counts and view totals for services, active agents, and invocations (`components/AgentsLeaderboard.tsx`).
+- **Systemic Stress:** View one signal per domain, using the maximum score when multiple agents share a domain. The systemic score is S_sys = 1 − ∏(1 − S_i). The panel flags *hidden systemic stress* when S_sys ≥ τ_sys and no domain has crossed its own threshold (`services/systemicStress.ts`, `components/SystemicStress.tsx`).
 
 ## Systemic stress metadata
 Declare a domain and score in any definition with an `x-apl` block (on a service entry, or under `info` in OpenAPI):
@@ -23,11 +21,17 @@ x-apl:
   threshold: 0.70     # tau_i (default 0.70)
 ```
 
-Agents without metadata can be assigned a domain and scored manually in the Systemic Stress tab. Try `samples/pharma-ops-services.yaml`: three domains at 0.60, 0.55 and 0.58 raise no local alert, yet S_sys = 0.924.
+Agents without metadata can be assigned a domain and scored in the Systemic Stress tab. In `samples/pharma-ops-services.yaml`, the three scores (0.60, 0.55, and 0.58) stay below their local thresholds, while their combined systemic score is 0.924.
 
-Tests reproduce the worked examples: `npx tsx tests/systemicStress.test.ts`.
+Tests cover systemic-stress scoring and metadata, service-definition normalization across JSON/YAML, Docker Compose, OpenAPI and Kubernetes formats, and run-registry operations. Run them with:
 
-**Assumptions and limits:** domains are treated as independent (correlated domains need a copula model), S_sys grows with the number of domains so τ_sys must be calibrated, and scores are assumed comparable across domains. Sample scores are synthetic.
+```bash
+npx tsx tests/systemicStress.test.ts
+npx tsx tests/serviceDefinition.test.ts
+npx tsx tests/registryStore.test.ts
+```
+
+**Assumptions and limits:** The calculation treats domains as independent and assumes scores are comparable across domains. Correlated domains require a different model. Since S_sys increases with the number of domains, calibrate τ_sys for the domain count. Sample scores are synthetic.
 
 ## Prerequisites
 - Node.js 18+ (Vite 5 requirement)
@@ -44,8 +48,8 @@ npm run preview   # serve the built app locally
 
 ## How to use the app
 1. Open **Service Lab** and drag/drop a service definition (`.yaml`, `.yml`, `.json`, docker-compose, OpenAPI, or K8s manifests).
-2. The app normalizes each entry, marks it `isAgentic: true`, attaches GPT endpoint/key/model defaults, and triggers an OWASP scan.
-3. Switch to **Orchestration Studio**, describe your task, and generate a plan. Run steps individually or “Execute Workflow”; usage counts increment per agent.
+2. The app normalizes each entry, sets `isAgentic: true`, attaches the configured GPT endpoint, key, and model, and starts an OWASP scan.
+3. In **Orchestration Studio**, describe the task and generate a plan. Run steps individually or select **Execute Workflow**. Usage counts update as steps run.
 4. Check **Analytics** for agent leaderboard and totals; open any card’s OWASP report for details.
 5. Open **Systemic Stress** to see per-domain signals and the joint score. This tab is computed locally and works without an LLM key.
 
@@ -55,8 +59,8 @@ npm run preview   # serve the built app locally
 - The UI currently assumes Azure GPT-OSS chat completions; adapt `callAzureChat` if you swap providers.
 
 ## Notes and limitations
-- LLM calls are live and can fail; OWASP analysis falls back to a low-severity error entry when the API errors.
-- Responses are simulated/LLM-generated; verify outputs before using them operationally.
+- LLM calls can fail. If an OWASP analysis request fails, the app records a low-severity error entry instead.
+- Agent outputs are generated by the model. Verify them before using them operationally.
 - No persistence layer is included; uploads and plans live in client state only (run history uses browser localStorage).
 
 ## Citation

@@ -31,8 +31,8 @@ export const OwaspReport: React.FC<OwaspReportProps> = ({ isOpen, onClose, servi
             {service.owaspRisks.length === 0 ? (
                 <div className="text-center py-12">
                     <ShieldCheck className="w-16 h-16 text-emerald-500/60 mx-auto mb-4" />
-                    <p className="text-slate-800 font-medium">No automated risks detected.</p>
-                    <p className="text-slate-500 text-sm">The initial scan did not flag any obvious vulnerabilities based on the description.</p>
+                    <p className="text-slate-800 font-medium">The scan found no risks in the service description.</p>
+                    <p className="text-slate-500 text-sm">This result is limited to the information provided and does not establish that the service is secure.</p>
                 </div>
             ) : (
                 service.owaspRisks.map((risk, idx) => (

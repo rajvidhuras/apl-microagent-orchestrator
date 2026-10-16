@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, FileJson, AlertCircle } from 'lucide-react';
-import yaml from 'js-yaml';
 import { Microservice } from '../types';
 import {
   AZURE_OPENAI_API_KEY,
   AZURE_OPENAI_ENDPOINT,
   DEFAULT_GPT_MODEL,
 } from '../services/llmService';
-import { readAplMetadata } from '../services/systemicStress';
+import { parseServiceDefinition } from '../services/serviceDefinition';
 
 interface FileUploadProps {
   onServicesLoaded: (services: Microservice[]) => void;
@@ -34,135 +33,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onServicesLoaded, compac
     reader.onload = (e) => {
       const content = e.target?.result as string;
       try {
-        let parsedData: any;
-        
-        // Handle JSON
-        if (file.name.toLowerCase().endsWith('.json')) {
-            try {
-                parsedData = JSON.parse(content);
-            } catch (e) {
-                throw new Error("Invalid JSON format");
-            }
-        } 
-        // Handle YAML
-        else {
-            try {
-                parsedData = yaml.load(content);
-                if (parsedData === undefined) {
-                     throw new Error("Could not initialize YAML parser.");
-                }
-            } catch(e2: any) {
-                console.error("YAML Parse Error:", e2);
-                throw new Error("Invalid YAML format. Please check syntax.");
-            }
-        }
-
-        if (!parsedData) {
-            throw new Error("File appears empty.");
-        }
-
-        console.log("Parsed Data:", parsedData);
-
-        // Normalize structure to Microservice[]
-        let rawServices: any[] = [];
-        
-        // Strategy 1: Root is Array (Standard List)
-        if (Array.isArray(parsedData)) {
-            rawServices = parsedData;
-        } 
-        // Strategy 2: 'services' key (Docker Compose / Custom)
-        else if (parsedData.services) {
-            if (Array.isArray(parsedData.services)) {
-                rawServices = parsedData.services;
-            } else if (typeof parsedData.services === 'object') {
-                // Handle services: { name: { ... } } (Docker Compose style)
-                rawServices = Object.entries(parsedData.services).map(([key, val]: [string, any]) => ({
-                    name: key,
-                    description: val.description || (val.image ? `Image: ${val.image}` : `Service defined in ${key}`),
-                    endpoints: val.ports ? val.ports.map((p: any) => `port:${p}`) : [],
-                    ...val
-                }));
-            }
-        } 
-        // Strategy 3: 'microservices' key
-        else if (parsedData.microservices && Array.isArray(parsedData.microservices)) {
-            rawServices = parsedData.microservices;
-        }
-        // Strategy 4: OpenAPI / Swagger Spec (Single Service)
-        else if (parsedData.openapi || parsedData.swagger) {
-            const title = parsedData.info?.title || file.name.split('.')[0];
-            const desc = parsedData.info?.description || 'Imported from OpenAPI definition';
-            const endpoints = parsedData.paths ? Object.keys(parsedData.paths) : [];
-            
-            rawServices = [{
-                name: title,
-                description: desc,
-                endpoints: endpoints,
-                isAgentic: false,
-                aplSource: parsedData
-            }];
-        }
-        // Strategy 5: Kubernetes Manifest (Single Service/Deployment or List)
-        else if (parsedData.kind) {
-            if (parsedData.kind === 'List' && Array.isArray(parsedData.items)) {
-                 rawServices = parsedData.items.map((i: any) => ({
-                     name: i.metadata?.name || 'K8s Resource',
-                     description: `Kubernetes ${i.kind}`,
-                     endpoints: [],
-                     ...i.spec
-                 }));
-            } else if (parsedData.metadata?.name) {
-                 rawServices = [{
-                     name: parsedData.metadata.name,
-                     description: `Kubernetes ${parsedData.kind}`,
-                     endpoints: [],
-                     ...parsedData.spec
-                 }];
-            }
-        }
-        // Strategy 6: Root Object Map (e.g. { "service-a": { ... }, "service-b": { ... } })
-        else if (typeof parsedData === 'object') {
-             // If it's a map, try to extract keys as names
-             const entries = Object.entries(parsedData);
-             // Filter out likely metadata keys if mixed (e.g. "version": "3")
-             const possibleServices = entries.filter(([key, val]) => {
-                 if (key === 'version' || key === 'networks' || key === 'volumes') return false;
-                 return typeof val === 'object' && val !== null;
-             });
-
-             if (possibleServices.length > 0) {
-                 rawServices = possibleServices.map(([k, v]: [string, any]) => ({
-                     name: k,
-                     description: v.description || (v.image ? `Image: ${v.image}` : "Imported generic service"),
-                     endpoints: v.ports || [],
-                     ...v
-                 }));
-             }
-        }
-
-        if (rawServices.length === 0) {
-             throw new Error("No identifiable service definitions found. Ensure file contains a list of services or a 'services' map.");
-        }
-        
-        // Map to internal Microservice type
-        const services: Microservice[] = rawServices.map((s: any, index: number) => ({
-            id: s.id || `svc-${index}-${Date.now()}`,
-            name: s.name || `Service ${index + 1}`,
-            description: s.description || (s.image ? `Docker image: ${s.image}` : 'No description provided'),
-            endpoints: Array.isArray(s.endpoints) ? s.endpoints : (s.url ? [s.url] : []),
-            // AUTO-ENABLE AGENTIC MODE
-            isAgentic: true, 
-            connectionConfig: {
-                url: AZURE_OPENAI_ENDPOINT,
-                apiKey: AZURE_OPENAI_API_KEY,
-                modelName: DEFAULT_GPT_MODEL
-            },
-            usageCount: 0,
-            owaspRisks: [],
-            // APL: optional domain + stress score declared in the definition
-            ...readAplMetadata(s.aplSource ?? s)
-        }));
-
+        const services = parseServiceDefinition(content, file.name, {
+          url: AZURE_OPENAI_ENDPOINT,
+          apiKey: AZURE_OPENAI_API_KEY,
+          modelName: DEFAULT_GPT_MODEL,
+        });
         onServicesLoaded(services);
       } catch (err: any) {
         console.error("Failed to parse file", err);
@@ -220,7 +95,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onServicesLoaded, compac
                 </h3>
                 <p className={`text-slate-600 ${compact ? 'text-xs' : 'mb-8 max-w-md'}`}>
                     Drag & drop <strong>YAML</strong>, <strong>JSON</strong>, <strong>Docker Compose</strong>, or <strong>OpenAPI</strong> files.
-                    {compact ? '' : <><br/>We will automatically apply the <span className="text-sky-600 font-medium">Agentic Wrapper</span> to all services.</>}
+                    {compact ? '' : <><br/>Imported services are added to the library as agents.</>}
                 </p>
 
                 {!compact && (

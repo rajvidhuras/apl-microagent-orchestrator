@@ -5,6 +5,8 @@ import yaml from 'js-yaml';
 import { Microservice } from '../types';
 import {
   assessSystemicStress,
+  clamp01,
+  domainSignals,
   readAplMetadata,
   systemicScore,
 } from '../services/systemicStress';
@@ -86,6 +88,59 @@ const agent = (id: string, domain?: string, score?: number, threshold = 0.7): Mi
   const m = readAplMetadata({ 'x-apl': { domain: 'QA', stressScore: 1.7, threshold: -1 } });
   assert.equal(m.stress!.score, 1);
   assert.equal(m.stress!.threshold, 0);
+}
+
+// 7. Boundary values, invalid numbers, and empty-domain probability.
+{
+  assert.equal(clamp01(Number.NaN), 0);
+  assert.equal(clamp01(Number.POSITIVE_INFINITY), 0);
+  assert.equal(clamp01(-0.1), 0);
+  assert.equal(clamp01(1.1), 1);
+  assert.equal(systemicScore([]), 0);
+  assert.equal(systemicScore([0, 0]), 0);
+  assert.equal(systemicScore([1, 0.5]), 1);
+
+  const empty = assessSystemicStress([], 0);
+  assert.equal(empty.systemicAlert, false);
+  assert.equal(empty.probabilityAllStable, 1);
+}
+
+// 8. Exact threshold is an alert; domain aggregation uses the strictest threshold.
+{
+  const signals = domainSignals([
+    agent('a1', 'Payments', 0.6, 0.8),
+    agent('a2', 'Payments', 0.2, 0.6),
+  ]);
+  assert.equal(signals.length, 1);
+  assert.equal(signals[0].score, 0.6);
+  assert.equal(signals[0].threshold, 0.6);
+  assert.equal(signals[0].localAlert, true);
+
+  const assessment = assessSystemicStress([agent('exact', 'Exact', 0.9)], 0.9);
+  assert.equal(assessment.systemicAlert, true);
+  assert.equal(assessment.hiddenSystemic, false);
+  assert.equal(assessment.localAlertCount, 1);
+}
+
+// 9. Metadata supports legacy aliases, missing score, defaults, and malformed values.
+{
+  assert.deepEqual(readAplMetadata(null), {});
+  assert.deepEqual(readAplMetadata({ 'x-apl-domain': 'Legacy' }), { domain: 'Legacy' });
+
+  const metadata = readAplMetadata({
+    domain: 'Legacy',
+    'x-apl-stress-score': '0.25',
+    'x-apl-threshold': 'invalid',
+  });
+  assert.deepEqual(metadata.stress, {
+    score: 0.25,
+    threshold: 0.7,
+    source: 'manifest',
+  });
+
+  assert.deepEqual(readAplMetadata({ domain: 'No score', stressScore: 'invalid' }), {
+    domain: 'No score',
+  });
 }
 
 console.log('All systemic stress tests passed.');

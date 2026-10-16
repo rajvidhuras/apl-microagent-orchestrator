@@ -25,15 +25,14 @@ const App: React.FC = () => {
     setServices(prev => [...prev, ...newServices]);
     
     // Auto-trigger security analysis in background for new services
-    const analysedServices = await Promise.all(newServices.map(async (svc) => {
+    const analyzedServices = await Promise.all(newServices.map(async (svc) => {
         const risks = await analyzeOwaspRisks(svc.name, svc.description, svc.endpoints);
         return { ...svc, owaspRisks: risks };
     }));
     
     setServices(prev => {
-        // Merge the analysed versions back in
         return prev.map(p => {
-            const foundAnalyzed = analysedServices.find(a => a.id === p.id);
+            const foundAnalyzed = analyzedServices.find(a => a.id === p.id);
             return foundAnalyzed || p;
         });
     });
@@ -133,13 +132,13 @@ const App: React.FC = () => {
 
       <main className="flex-1 container mx-auto px-6 py-8 overflow-hidden flex flex-col">
         
-        {/* Tab 1: Upload & Wrapper Creation */}
+        {/* Service Lab */}
         {activeTab === 'lab' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex justify-between items-end">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Service Lab</h2>
-                        <p className="text-slate-600">Upload your YAML/JSON file. We will automatically apply the agentic wrapper.</p>
+                        <p className="text-slate-600">Upload a service definition to add it to the library as an agent.</p>
                     </div>
                     {services.length > 0 && (
                         <button 
@@ -173,12 +172,12 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* Tab 2: Orchestration Studio (List + Chat) */}
+        {/* Orchestration Studio */}
         {activeTab === 'studio' && (
             <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-slate-900 mb-2">Orchestration Studio</h2>
-                    <p className="text-slate-600">Push your problem to the chat. View all available microservices on the left.</p>
+                    <p className="text-slate-600">Describe a task to create a workflow. Available microservices appear on the left.</p>
                 </div>
                 <div className="flex-1 min-h-[600px]">
                     <Orchestrator agents={services} onAgentsUsed={handleAgentsUsed} />
@@ -186,7 +185,7 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* Tab 3: Analytics Leaderboard */}
+        {/* Analytics */}
         {activeTab === 'analytics' && (
             <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                  <div className="mb-8 text-center">
@@ -214,14 +213,14 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* Tab 4: Operational Registry */}
+        {/* Run registry */}
         {activeTab === 'registry' && (
             <div className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Registry agents={services} />
             </div>
         )}
 
-        {/* Tab 5: Systemic Stress (joint-probability dimension) */}
+        {/* Systemic stress */}
         {activeTab === 'systemic' && (
             <div className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <SystemicStress agents={services} onUpdateAgent={handleUpdateAgent} />

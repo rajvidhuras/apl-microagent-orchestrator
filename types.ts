@@ -11,7 +11,7 @@ export interface Microservice {
   };
   usageCount: number;
   owaspRisks: OwaspRisk[];
-  // APL systemic stress dimension (optional)
+  // Optional APL domain stress metadata.
   domain?: string;
   stress?: {
     score: number;      // S_i in [0, 1]
